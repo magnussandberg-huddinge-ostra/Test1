@@ -2,7 +2,7 @@
 
 Det här repot är ett färdigt nätverkslabb för undervisning i Linux och nätverksadministration.
 
-Varje elev startar en egen GitHub Codespace från repot. Inuti Codespace startas tre separata Ubuntu-miljöer med Docker Compose på samma privata nätverk.
+Varje elev startar en egen GitHub Codespace från repot. Inuti Codespace startas flera separata Ubuntu-miljöer med Docker Compose på samma privata nätverk.
 
 ## Labbet
 
@@ -11,15 +11,11 @@ Varje elev startar en egen GitHub Codespace från repot. Inuti Codespace startas
 | Klient | `client` | `172.20.0.10` | Linux-klient |
 | Server 1 | `server1` | `172.20.0.20` | Linux-server, t.ex. webbserver |
 | Server 2 | `server2` | `172.20.0.30` | Linux-server, t.ex. DNS-server |
+| Backupserver | `backupserver` | tilldelas automatiskt först | Elevövning: statisk IP, SSH och backup |
 
 Nät: `172.20.0.0/24`
 
-Användare i alla tre maskiner:
-
-- användarnamn: `student`
-- lösenord: `student`
-
-Lösenordet används bara i det isolerade labbnätet. SSH-portarna publiceras inte mot internet.
+De tre färdiga maskinerna har användaren `student` och lösenordet `student` för det isolerade labbnätet. Backupservern är avsiktligt inte färdigkonfigurerad.
 
 ## Starta i Codespaces
 
@@ -39,7 +35,7 @@ Kontrollera maskinerna:
 ./scripts/lab-status.sh
 ```
 
-## Logga in på en maskin
+## Logga in på en färdig maskin
 
 Direkt via Docker:
 
@@ -78,9 +74,100 @@ ip addr
 ip route
 ```
 
-## Första laboration
+## Laboration: Gör backupservern klar
 
-1. Starta alla tre Linuxmaskiner.
+Backupservern startar med en automatiskt tilldelad adress och utan installerad SSH-server. Uppgiften är att konfigurera den.
+
+### 1. Gå in på backupservern
+
+Från Codespace-terminalen:
+
+```bash
+docker exec -it backupserver bash
+```
+
+Kontrollera aktuell adress:
+
+```bash
+ip addr
+```
+
+### 2. Sätt fast IP-adress
+
+Backupservern ska få:
+
+```text
+172.20.0.40/24
+```
+
+Börja med att ta reda på nätverkskortets namn med `ip addr`. Sätt sedan adressen på rätt interface. Exempel om interfacet heter `eth0`:
+
+```bash
+ip addr flush dev eth0
+ip addr add 172.20.0.40/24 dev eth0
+ip link set eth0 up
+```
+
+Kontrollera:
+
+```bash
+ip addr
+ping -c 4 172.20.0.10
+```
+
+### 3. Gör servern klar för SSH
+
+Installera SSH-server:
+
+```bash
+apt update
+apt install openssh-server -y
+```
+
+Sätt ett lösenord för användaren `student`:
+
+```bash
+passwd student
+```
+
+Starta SSH:
+
+```bash
+service ssh start
+```
+
+Kontrollera:
+
+```bash
+service ssh status
+ss -tulpn
+```
+
+### 4. Testa från klienten
+
+Öppna klienten:
+
+```bash
+docker exec -it client bash
+```
+
+Testa först nätverket:
+
+```bash
+ping -c 4 172.20.0.40
+```
+
+Anslut sedan:
+
+```bash
+ssh student@172.20.0.40
+```
+
+När detta fungerar är backupservern färdig för nästa moment: backup med `scp`, `rsync`, `tar` och senare schemaläggning.
+
+## Första laboration med server1
+
+1. Starta labbet.
 2. Kontrollera IP-adresserna.
 3. Pinga mellan klient och servrar.
 4. SSH från `client` till `server1`.
@@ -112,13 +199,11 @@ ss -tulpn
 
 ## Återställ labbet
 
-Detta tar bort labbmaskinerna och skapar rena maskiner igen:
-
 ```bash
 ./scripts/lab-reset.sh
 ```
 
-**Varning:** ändringar som bara gjorts inne i containrarna försvinner vid återställning. Spara dokumentation, skript och viktiga filer i repot.
+Ändringar som bara gjorts inne i containrarna försvinner vid full återställning. Backupservern har en separat Docker-volume monterad på `/backups` för senare backupövningar.
 
 ## Backup av elevarbete
 
