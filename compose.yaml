@@ -23,9 +23,24 @@ services:
       labnet:
         ipv4_address: 172.20.0.30
 
+  backupserver:
+    build: ./docker/student-server
+    container_name: backupserver
+    hostname: backupserver
+    cap_add:
+      - NET_ADMIN
+    command: ["sleep", "infinity"]
+    volumes:
+      - backup_data:/backups
+    networks:
+      - labnet
+
 networks:
   labnet:
     driver: bridge
     ipam:
       config:
         - subnet: 172.20.0.0/24
+
+volumes:
+  backup_data:
