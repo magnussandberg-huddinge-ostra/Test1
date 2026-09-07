@@ -41,6 +41,8 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/24
+          aux_addresses:
+            backupserver_reserved: 172.20.0.40
 
 volumes:
   backup_data:
