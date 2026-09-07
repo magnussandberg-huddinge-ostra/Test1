@@ -1,0 +1,31 @@
+services:
+  client:
+    build: ./docker
+    container_name: client
+    hostname: client
+    networks:
+      labnet:
+        ipv4_address: 172.20.0.10
+
+  server1:
+    build: ./docker
+    container_name: server1
+    hostname: server1
+    networks:
+      labnet:
+        ipv4_address: 172.20.0.20
+
+  server2:
+    build: ./docker
+    container_name: server2
+    hostname: server2
+    networks:
+      labnet:
+        ipv4_address: 172.20.0.30
+
+networks:
+  labnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
